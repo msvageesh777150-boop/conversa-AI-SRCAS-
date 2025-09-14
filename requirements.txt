@@ -1,0 +1,6 @@
+streamlit
+flask
+twilio
+googletrans==4.0.0-rc1
+langdetect
+python-telegram-bot==20.3
