@@ -4,9 +4,19 @@ from langdetect import detect
 import json
 import datetime
 
-# Load FAQ Data from JSON
-with open("faq_data.json", "r", encoding="utf-8") as f:
-    faq_data = json.load(f)
+# Example FAQ data - you can load from JSON file if you want
+faq_data = {
+    "fee": "The college fee details are available on the official website.",
+    "admission": "Admissions start in June. Please visit the admission portal.",
+    "hostel": "Hostel facilities are available for both boys and girls."
+}
+
+# Keywords for better matching
+keywords = {
+    "fee": ["fee", "fees", "payment", "college fee", "tuition"],
+    "admission": ["admission", "apply", "entrance", "registration"],
+    "hostel": ["hostel", "accommodation", "stay"]
+}
 
 def detect_language(text):
     try:
@@ -14,25 +24,19 @@ def detect_language(text):
     except:
         return "en"
 
-def translate_to_english(text):
+def translate_text(text, source_lang, target_lang):
     try:
-        return GoogleTranslator(source="auto", target="en").translate(text)
-    except:
+        return GoogleTranslator(source=source_lang, target=target_lang).translate(text)
+    except Exception as e:
+        st.error(f"Translation error: {e}")
         return text
 
-def translate_back(text, lang):
-    if lang == "en":
-        return text
-    try:
-        return GoogleTranslator(source="en", target=lang).translate(text)
-    except:
-        return text
-
-def get_answer(user_input):
-    user_input = user_input.lower()
-    for key in faq_data:
-        if key in user_input:
-            return faq_data[key]
+def get_answer(user_input_en):
+    user_input_en = user_input_en.lower()
+    for category, kw_list in keywords.items():
+        for kw in kw_list:
+            if kw in user_input_en:
+                return faq_data.get(category)
     return "Sorry, I don't know that. Please contact admin office."
 
 def log_conversation(user, bot):
@@ -46,25 +50,30 @@ st.title("🎓 College Multilingual Chatbot")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display history
+# Display chat history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-if user_input := st.chat_input("Type your message..."):
+# User input
+user_input = st.chat_input("Type your message...")
+
+if user_input:
     lang = detect_language(user_input)
-    query_en = translate_to_english(user_input)
-    answer_en = get_answer(query_en)
-    final_answer = translate_back(answer_en, lang)
+    user_input_en = translate_text(user_input, source_lang=lang, target_lang="en")
+    answer_en = get_answer(user_input_en)
+    answer_final = answer_en
+    if lang != "en":
+        answer_final = translate_text(answer_en, source_lang="en", target_lang=lang)
 
     st.session_state.messages.append({"role": "user", "content": user_input})
-    st.session_state.messages.append({"role": "assistant", "content": final_answer})
-    log_conversation(user_input, final_answer)
+    st.session_state.messages.append({"role": "assistant", "content": answer_final})
+    log_conversation(user_input, answer_final)
 
     with st.chat_message("user"):
         st.markdown(user_input)
     with st.chat_message("assistant"):
-        st.markdown(final_answer)
+        st.markdown(answer_final)
 
 # Download logs
 try:
