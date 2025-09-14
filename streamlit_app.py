@@ -1,5 +1,5 @@
 import streamlit as st
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 from langdetect import detect
 import json
 import datetime
@@ -8,8 +8,6 @@ import datetime
 with open("faq_data.json", "r", encoding="utf-8") as f:
     faq_data = json.load(f)
 
-translator = Translator()
-
 def detect_language(text):
     try:
         return detect(text)
@@ -17,12 +15,18 @@ def detect_language(text):
         return "en"
 
 def translate_to_english(text):
-    return translator.translate(text, dest="en").text
+    try:
+        return GoogleTranslator(source="auto", target="en").translate(text)
+    except:
+        return text
 
 def translate_back(text, lang):
     if lang == "en":
         return text
-    return translator.translate(text, dest=lang).text
+    try:
+        return GoogleTranslator(source="en", target=lang).translate(text)
+    except:
+        return text
 
 def get_answer(user_input):
     user_input = user_input.lower()
